@@ -3,10 +3,19 @@
 # Y - n x 1 response vector
 standardizeXY <- function(X, Y){
   # [ToDo] Center Y
-  
+  # Compute mean of Y
+  Ymean <- mean(Y)
+  # Center Y by subtracting its mean
+  Ytilde <- Y - Ymean
   # [ToDo] Center and scale X
-  
-  
+  # Compute column means of X
+  Xmeans <- colMeans(X)
+  # Center X by subtracting its column means
+  Xcentered <- sweep(X, 2, Xmeans, "-")
+  # Compute weights that will be used in scaling X
+  weights <- sqrt(colMeans(Xcentered * Xcentered))
+  # Scale X so each column has unit variance
+  Xtilde <- sweep(Xcentered, 2, weights, "/")
   # Return:
   # Xtilde - centered and appropriately scaled X
   # Ytilde - centered Y
