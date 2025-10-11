@@ -52,5 +52,16 @@ test_that("soft() correctly applies soft-thresholding to vectors", {
   expect_equal(out, expected)
 })
 
+test_that("lasso() matches manual computation on simple example", {
+
+  Y <- rep(21, 3)                 
+  X <- matrix(1:3, nrow = 3, ncol = 3, byrow = TRUE)  # 3x3 matrix [1 2 3; 1 2 3; 1 2 3]
+  beta <- c(1, 3, 5)
+  lambda <- 1
+  
+  out <- lasso(X, Y, beta, lambda)
+  expected <- 9.5
+  expect_equal(out, expected, tolerance = 1e-12)
+})
 
 
