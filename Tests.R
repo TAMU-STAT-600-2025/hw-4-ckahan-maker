@@ -29,4 +29,28 @@ test_that("standardizeXY correctly centers and scales data", {
   expect_true(abs(mean(out$Ytilde)) < 1e-10)
 })
 
+test_that("soft() correctly applies soft-thresholding to a scalar", {
+  lambda <- 1
+  
+  # Case 1: scalar greater than λ
+  expect_equal(soft(3, lambda), 2)
+  
+  # Case 2: scalar within [-λ, λ]
+  expect_equal(soft(0.5, lambda), 0)
+  
+  # Case 3: scalar less than -λ
+  expect_equal(soft(-3, lambda), -2)
+})
+
+test_that("soft() correctly applies soft-thresholding to vectors", {
+  a <- c(-3, -1, -0.5, 0.5, 1, 3)
+  lambda <- 1
+  out <- soft(a, lambda)
+  
+  expected <- c(-2, 0, 0, 0, 0, 2)
+  
+  expect_equal(out, expected)
+})
+
+
 
