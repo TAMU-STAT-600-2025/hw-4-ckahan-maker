@@ -56,13 +56,22 @@ lasso <- function(Xtilde, Ytilde, beta, lambda){
 # eps - precision level for convergence assessment, default 0.001
 fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps = 0.001){
   #[ToDo]  Check that n is the same between Xtilde and Ytilde
-  
+  if (nrow(Xtilde) != length(Ytilde)){
+    stop("Xtilde and Ytilde should have same number of rows")
+  }
   #[ToDo]  Check that lambda is non-negative
-  
+  if (lambda < 0) {
+    stop("lambda should be non-negative")
+  }
   #[ToDo]  Check for starting point beta_start. 
   # If none supplied, initialize with a vector of zeros.
   # If supplied, check for compatibility with Xtilde in terms of p
   
+  if (is.null(beta_start)) {
+    beta_start = rep(0, ncol(Xtilde))
+  } else if (length(beta_start) != ncol(Xtilde)) {
+    stop("beta_start must have the same number of entries as columns of Xtilde")
+  }
   #[ToDo]  Coordinate-descent implementation. 
   # Stop when the difference between objective functions is less than eps for the first time.
   # For example, if you have 3 iterations with objectives 3, 1, 0.99999,
@@ -71,6 +80,8 @@ fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps 
   # Return 
   # beta - the solution (a vector)
   # fmin - optimal function value (value of objective at beta, scalar)
+  beta = beta_start
+  fmin = 0
   return(list(beta = beta, fmin = fmin))
 }
 

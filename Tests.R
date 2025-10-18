@@ -64,4 +64,46 @@ test_that("lasso() matches manual computation on simple example", {
   expect_equal(out, expected, tolerance = 1e-12)
 })
 
+library(testthat)
+
+# Check that nrow(Xtilde) == length(Ytilde)
+test_that("fitLASSOstandardized() checks for matching n between Xtilde and Ytilde", {
+  Xtilde <- matrix(0, nrow = 3, ncol = 3)
+  Ytilde <- rep(2, 2)   # length 2 → should fail
+  lambda <- 0.1
+  
+  expect_error(fitLASSOstandardized(Xtilde, Ytilde, lambda), 
+               "Xtilde and Ytilde should have same number of rows")
+  
+  # Fix Ytilde length → should pass
+  Ytilde <- rep(2, 3)
+  expect_silent(fitLASSOstandardized(Xtilde, Ytilde, lambda))
+})
+
+
+# Check that lambda is non-negative
+test_that("fitLASSOstandardized() rejects negative lambda", {
+  Xtilde <- matrix(rnorm(9), nrow = 3)
+  Ytilde <- rnorm(3)
+  
+  expect_error(fitLASSOstandardized(Xtilde, Ytilde, lambda = -1), 
+               "lambda should be non-negative")
+  
+  expect_silent(fitLASSOstandardized(Xtilde, Ytilde, lambda = 0))
+})
+
+
+# Check that beta_start length matches ncol(Xtilde)
+test_that("fitLASSOstandardized() checks beta_start length", {
+  Xtilde <- matrix(rnorm(12), nrow = 4, ncol = 3)
+  Ytilde <- rnorm(4)
+  lambda <- 0.1
+  
+  beta_bad <- rep(0, 4)   # length mismatch → should fail
+  expect_error(fitLASSOstandardized(Xtilde, Ytilde, lambda, beta_start = beta_bad), 
+               "beta_start must have the same number of entries as columns of Xtilde")
+  
+  beta_good <- rep(0, 3)  # correct length → should pass
+  expect_silent(fitLASSOstandardized(Xtilde, Ytilde, lambda, beta_start = beta_good))
+})
 
