@@ -126,23 +126,43 @@ fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps 
 # eps - precision level for convergence assessment, default 0.001
 fitLASSOstandardized_seq <- function(Xtilde, Ytilde, lambda_seq = NULL, n_lambda = 60, eps = 0.001){
   # [ToDo] Check that n is the same between Xtilde and Ytilde
- 
+  if (nrow(Xtilde) != length(Ytilde)){
+    stop("Xtilde and Ytilde should have same number of rows")
+  }
   # [ToDo] Check for the user-supplied lambda-seq (see below)
   # If lambda_seq is supplied, only keep values that are >= 0,
   # and make sure the values are sorted from largest to smallest.
   # If none of the supplied values satisfy the requirement,
   # print the warning message and proceed as if the values were not supplied.
   
+  if (!is.null(lambda_seq)){
+    # Only keep lambdas >= 0
+    lambda_seq <- lambda_seq[lambda_seq >= 0]
+    # Sort lambdas from largest to smallest
+    lambda_seq <- sort(lambda_seq, decreasing = TRUE)
+    if(length(lambda_seq) == 0){
+      warning("Invalid lambda_seq detected: only positive values should be supplied.")
+      lambda_seq <- NULL
+    }
+  }
   
   # If lambda_seq is not supplied, calculate lambda_max 
-  # (the minimal value of lambda that gives zero solution),
-  # and create a sequence of length n_lambda as
-  lambda_seq = exp(seq(log(lambda_max), log(0.01), length = n_lambda))
+  # (the minimal value of lambda that gives zero solution)
+  if (is.null(lambda_seq)){
+    n <- nrow(Xtilde)
+    XtY <- t(Xtilde) %*% Ytilde
+    # Compute λ_max = max(|X_jᵀY| / n);
+    # when λ ≥ λ_max, the soft-thresholding step sets all β_j = 0 (null solution)
+    lambda_max <- max(abs(XtY)) / n
+    # create a sequence of length n_lambda as
+    lambda_seq = exp(seq(log(lambda_max), log(0.01), length = n_lambda))
+  }
   
   # [ToDo] Apply fitLASSOstandardized going from largest to smallest lambda 
   # (make sure supplied eps is carried over). 
   # Use warm starts strategy discussed in class for setting the starting values.
-  
+  beta_mat <- 0
+  fmin_vec <- 0
   # Return output
   # lambda_seq - the actual sequence of tuning parameters used
   # beta_mat - p x length(lambda_seq) matrix of corresponding solutions at each lambda value

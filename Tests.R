@@ -151,3 +151,32 @@ test_that("fitLASSOstandardized matches glmnet on standardized toy data", {
   f_glm <- lasso(Xtilde, Ytilde, beta_glm, lambda)
   expect_equal(out$fmin, f_glm, tolerance = 1e-5)
 })
+
+
+test_that("fitLASSOstandardized_seq correctly handles no, negative, and mixed lambda_seq inputs", {
+  n <- 50
+  x1 <- rep(1, n)                                   # all 1s
+  x2 <- c(rep(1, n / 2), rep(0, n / 2))             # half 1s, half 0s
+  x3 <- c(rep(1, n / 2), rep(-1, n / 2))            # half 1s, half -1s
+  X <- cbind(x1, x2, x3)
+  Y <- rep(1, n)
+  
+  # 1: λ sequence not specified
+  out_null <- fitLASSOstandardized_seq(X, Y, lambda_seq = NULL, n_lambda = 3, eps = 1e-8)
+  
+  # λ_max = 1, sequence = exp(seq(log(1), log(0.01), len = 3)) = c(1, 0.1, 0.01)
+  expect_equal(out_null$lambda_seq, c(1, 0.1, 0.01), tolerance = 1e-12)
+  
+  # 2: λ sequence all negative
+  expect_warning(
+    out_neg <- fitLASSOstandardized_seq(X, Y, lambda_seq = c(-5, -1, -0.1), n_lambda = 3, eps = 1e-8),
+    regexp = "Invalid lambda_seq detected: only positive values should be supplied."
+  )
+  # Should fall back to same default as not specified case
+  expect_equal(out_neg$lambda_seq, c(1, 0.1, 0.01), tolerance = 1e-12)
+  
+  # 3: λ sequence mixed sign
+  out_mix <- fitLASSOstandardized_seq(X, Y, lambda_seq = c(1, -1, 0.01, -0.01), eps = 1e-8)
+  # Keep only non-negative and sort decreasing → (1, 0.01)
+  expect_equal(out_mix$lambda_seq, c(1, 0.01), tolerance = 1e-12)
+})
