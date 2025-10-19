@@ -96,10 +96,9 @@ fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps 
     XB <- Xtilde %*% beta_old
     # Calculate residual vector
     r <- Ytilde - XB
-    XtR <- t(Xtilde) %*% r
     for (j in 1:p){
       # gradient component for coordinate j: (1/n) * X_jᵀR 
-      XjR_scaled <- XtR[j] / n
+      XjR_scaled <- sum(Xtilde[, j] * r) / n
       # Update β_j via soft-thresholding: S(β_old[j] + (X_jᵀ r)/n, λ)
       beta[j] <- soft(beta_old[j] + XjR_scaled, lambda)
       # Compute coefficient change for feature j: β_old[j] − β_new[j]
