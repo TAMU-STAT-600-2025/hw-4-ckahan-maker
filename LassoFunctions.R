@@ -77,11 +77,43 @@ fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps 
   # For example, if you have 3 iterations with objectives 3, 1, 0.99999,
   # your should return fmin = 0.99999, and not have another iteration
   
+  # Initialize variables to track changes in the objective function across iterations
+  f_new <- lasso(Xtilde, Ytilde, beta_start, lambda)
+  # Ensure that first iteration of while loop runs
+  f_old <- f_new + 2 * eps
+  # Initialize beta
+  beta <- beta_start
+  # store number of observations
+  n <- nrow(Xtilde)
+  # store number of explanatory variables
+  p <- ncol(Xtilde)
+  # Check that difference between objective functions is greater than eps
+  while (f_old - f_new >= eps){
+    # Update previous objective value
+    f_old <- f_new
+    # Update previous value of beta
+    beta_old <- beta
+    XB <- Xtilde %*% beta_old
+    # Calculate residual vector
+    r <- Ytilde - XB
+    XtR <- t(Xtilde) %*% r
+    for (j in 1:p){
+      # gradient component for coordinate j: (1/n) * X_jᵀR 
+      XjR_scaled <- XtR[j] / n
+      # Update β_j via soft-thresholding: S(β_old[j] + (X_jᵀ r)/n, λ)
+      beta[j] <- soft(beta_old[j] + XjR_scaled, lambda)
+      # Compute coefficient change for feature j: β_old[j] − β_new[j]
+      delta_beta_j <- beta_old[j] - beta[j]
+      # Update residuals: r ← r + X_j * (β_old[j] − β[j])
+      r <- r + Xtilde[, j] * delta_beta_j
+    }
+    # Evaluate LASSO objective at the updated coefficients β
+    f_new <- lasso(Xtilde, Ytilde, beta, lambda)
+  }
+  fmin = f_new
   # Return 
   # beta - the solution (a vector)
   # fmin - optimal function value (value of objective at beta, scalar)
-  beta = beta_start
-  fmin = 0
   return(list(beta = beta, fmin = fmin))
 }
 
