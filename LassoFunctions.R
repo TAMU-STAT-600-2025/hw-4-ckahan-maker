@@ -228,18 +228,54 @@ fitLASSO <- function(X ,Y, lambda_seq = NULL, n_lambda = 60, eps = 0.001){
 # eps - precision level for convergence assessment, default 0.001
 cvLASSO <- function(X ,Y, lambda_seq = NULL, n_lambda = 60, k = 5, fold_ids = NULL, eps = 0.001){
   # [ToDo] Fit Lasso on original data using fitLASSO
- 
+  lasso_coeff <- fitLASSO(X ,Y, lambda_seq = lambda_seq, n_lambda = n_lambda, eps = eps)
+  # ensure all folds have the same lambda_seq
+  lambda_seq <- lasso_coeff$lambda_seq
+  n <- nrow(X)
   # [ToDo] If fold_ids is NULL, split the data randomly into k folds.
   # If fold_ids is not NULL, split the data according to supplied fold_ids.
-  
+  if (is.null(fold_ids)){
+    fold_ids <- sample(rep(1:k, length.out = n))
+  }
+  k <- max(fold_ids)
+  L <- length(lambda_seq)
   # [ToDo] Calculate LASSO on each fold using fitLASSO,
   # and perform any additional calculations needed for CV(lambda) and SE_CV(lambda)
+  fold_mse <- matrix(0, nrow = k, ncol = L)
+  for (fold in seq_len(k)) {
+    # Get indices of current fold
+    test_idx  <- which(fold_ids == fold)
+    train_idx <- setdiff(seq_len(n), test_idx)
+    
+    # Select rows from X and Y matching either training fold or testing folds
+    Xtrain <- X[train_idx, , drop = FALSE]
+    Ytrain <- Y[train_idx]
+    Xtest <- X[test_idx, , drop = FALSE]
+    Ytest <- Y[test_idx]
+    
+    fit_train <- fitLASSO(Xtrain, Ytrain, lambda_seq = lambda_seq, n_lambda = n_lambda, eps = eps)
+    # Predict on holdout for each lambda
+    Yhat_mat <- Xtest %*% fit_train$beta_mat
+    # add beta0_vec for each lambda
+    Yhat_mat <- sweep(Yhat_mat, 2, fit_train$beta0_vec, "+") 
+    
+    # Fold-wise MSE per lambda
+    residuals_mat <- Ytest - Yhat_mat                      
+    fold_mse[fold, ] <- colMeans(residuals_mat^2)
+  }
+  
+  cvm  <- colMeans(fold_mse)                 # mean CV error per lambda
+  cvse <- apply(fold_mse, 2, sd) / sqrt(k)   # standard error across folds
   
   # [ToDo] Find lambda_min
-
+  idx_min <- which.min(cvm)
+  lambda_min <- lambda_seq[idx_min]
+  
   # [ToDo] Find lambda_1SE
-  
-  
+  thresh_1se <- cvm[idx_min] + cvse[idx_min]
+  idx_1se <- max(which(cvm <= thresh_1se))
+  lambda_1se <- lambda_seq[idx_1se]
+
   # Return output
   # Output from fitLASSO on the whole data
   # lambda_seq - the actual sequence of tuning parameters used
