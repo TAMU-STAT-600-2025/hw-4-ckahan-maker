@@ -125,9 +125,11 @@ fitLASSOstandardized <- function(Xtilde, Ytilde, lambda, beta_start = NULL, eps 
 # eps - precision level for convergence assessment, default 0.001
 fitLASSOstandardized_seq <- function(Xtilde, Ytilde, lambda_seq = NULL, n_lambda = 60, eps = 0.001){
   # [ToDo] Check that n is the same between Xtilde and Ytilde
-  if (nrow(Xtilde) != length(Ytilde)){
+  n <- nrow(Xtilde)
+  if (n != length(Ytilde)){
     stop("Xtilde and Ytilde should have same number of rows")
   }
+  p <- ncol(Xtilde)
   # [ToDo] Check for the user-supplied lambda-seq (see below)
   # If lambda_seq is supplied, only keep values that are >= 0,
   # and make sure the values are sorted from largest to smallest.
@@ -148,7 +150,6 @@ fitLASSOstandardized_seq <- function(Xtilde, Ytilde, lambda_seq = NULL, n_lambda
   # If lambda_seq is not supplied, calculate lambda_max 
   # (the minimal value of lambda that gives zero solution)
   if (is.null(lambda_seq)){
-    n <- nrow(Xtilde)
     XtY <- t(Xtilde) %*% Ytilde
     # Compute λ_max = max(|X_jᵀY| / n);
     # when λ ≥ λ_max, the soft-thresholding step sets all β_j = 0 (null solution)
@@ -156,12 +157,26 @@ fitLASSOstandardized_seq <- function(Xtilde, Ytilde, lambda_seq = NULL, n_lambda
     # create a sequence of length n_lambda as
     lambda_seq = exp(seq(log(lambda_max), log(0.01), length = n_lambda))
   }
-  
+  # calculate length of lambda_seq
+  num_lambda <- length(lambda_seq)
+  # initialize matrix of solutions at each lambda value
+  beta_mat <- matrix(0, nrow = p, ncol = num_lambda)
+  # initialize vector of objective function values at solution for each lambda
+  fmin_vec <- rep(0, num_lambda)
   # [ToDo] Apply fitLASSOstandardized going from largest to smallest lambda 
   # (make sure supplied eps is carried over). 
   # Use warm starts strategy discussed in class for setting the starting values.
-  beta_mat <- 0
-  fmin_vec <- 0
+  beta <- rep(0, p)
+  for (i in 1:num_lambda){
+    lambda <- lambda_seq[i]
+    # Perform coordinate descent LASSO for the current value of λ
+    out <- fitLASSOstandardized(Xtilde, Ytilde, lambda = lambda, beta_start = beta, eps = eps)
+    # Store the optimal coefficients and objective value for this λ
+    beta_mat[, i] <- out$beta
+    fmin_vec[i] <- out$fmin
+    # Use the current solution as the warm start for the next λ
+    beta <- out$beta
+  }
   # Return output
   # lambda_seq - the actual sequence of tuning parameters used
   # beta_mat - p x length(lambda_seq) matrix of corresponding solutions at each lambda value

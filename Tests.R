@@ -180,3 +180,77 @@ test_that("fitLASSOstandardized_seq correctly handles no, negative, and mixed la
   # Keep only non-negative and sort decreasing → (1, 0.01)
   expect_equal(out_mix$lambda_seq, c(1, 0.01), tolerance = 1e-12)
 })
+
+test_that("fitLASSOstandardized_seq matches glmnet on standardized normal data (lambda specified and not specified)", {
+  set.seed(123)
+  n <- 50
+  p <- 100
+  
+  X <- matrix(rnorm(n * p), n, p)
+  Y <- rnorm(n)
+  
+  # Standardize X and Y
+  Xtilde <- scale(X) * sqrt(n / (n - 1))
+  Ytilde <- as.numeric(scale(Y) * sqrt(n / (n - 1)))
+  
+  # Standardization check
+  expect_true(all(abs(colMeans(Xtilde)) < 1e-12))
+  expect_true(all(abs(apply(Xtilde, 2, sd) - sqrt(n / (n-1))) < 1e-12))
+  expect_true(abs(mean(Ytilde)) < 1e-12)
+  expect_true(abs(sd(Ytilde) - sqrt(n / (n-1))) < 1e-12)
+  
+  # Case 1: lambda not supplied (use lambda_max to construct sequence)
+  out_default <- fitLASSOstandardized_seq(
+    Xtilde, Ytilde,
+    lambda_seq = NULL,
+    n_lambda = 6,         
+    eps = 1e-15
+  )
+  
+  # Fit glmnet with identical settings and lambda_seq
+  # Decrease 'thresh' to tighten convergence tolerance and increase the number of iterations
+  gfit_default <- glmnet(
+    Xtilde, Ytilde,
+    alpha = 1,
+    lambda = out_default$lambda_seq,
+    intercept = FALSE,
+    standardize = FALSE,
+    thresh = 1e-17
+  )
+  beta_glm_default <- as.matrix(gfit_default$beta) 
+  # Compare coefficients and objective values across lambdas
+  expect_equal(out_default$beta_mat, unname(beta_glm_default), tolerance = 1e-5)
+  
+  # Objective comparison
+  f_glm_default <- sapply(
+    seq_along(out_default$lambda_seq),
+    function(i) lasso(Xtilde, Ytilde, beta_glm_default[, i], out_default$lambda_seq[i])
+  )
+  expect_equal(out_default$fmin_vec, f_glm_default, tolerance = 1e-7)
+  
+  # Case 2: lambda_seq specified
+  lambda_spec <- c(1, 0.5, 0.1, 0.01)  
+  
+  out_spec <- fitLASSOstandardized_seq(
+    Xtilde, Ytilde,
+    lambda_seq = lambda_spec,
+    eps = 1e-15
+  )
+  gfit_spec <- glmnet(
+    Xtilde, Ytilde,
+    alpha = 1,
+    lambda = out_spec$lambda_seq,
+    intercept = FALSE,
+    standardize = FALSE,
+    thresh = 1e-15
+  )
+  beta_glm_spec <- as.matrix(gfit_spec$beta)
+  
+  expect_equal(out_spec$beta_mat, unname(beta_glm_spec), tolerance = 1e-5)
+  
+  f_glm_spec <- sapply(
+    seq_along(out_spec$lambda_seq),
+    function(i) lasso(Xtilde, Ytilde, beta_glm_spec[, i], out_spec$lambda_seq[i])
+  )
+  expect_equal(out_spec$fmin_vec, f_glm_spec, tolerance = 1e-7)
+})
