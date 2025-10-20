@@ -19,14 +19,27 @@ Y = riboflavin$y
 source("LassoFunctions.R")
 
 # [ToDo] Use your fitLASSO function on the riboflavin data with 60 tuning parameters
-
+out_lasso <- fitLASSO (X ,Y, n_lambda = 60)
 # [ToDo] Based on the above output, plot the number of non-zero elements in each beta versus the value of tuning parameter
+tol <- 1e-12
+# Count nonzeros per lambda 
+non_zero_beta <- colSums(abs(out_lasso$beta_mat) > tol)
+plot(out_lasso$lambda_seq, non_zero_beta,
+     log = "x",
+     type = "b", pch = 16, lwd = 2,
+     xlab = expression(lambda),
+     ylab = "Number of non-zero coefficients")
+grid()
 
 # [ToDo] Use microbenchmark 10 times to check the timing of your fitLASSO function above with 60 tuning parameters
-
+microbenchmark(
+  fitLASSO (X ,Y, n_lambda = 60),
+  times = 10
+)
 # [ToDo] Report your median timing in the comments here: (~5.8 sec for Irina on her laptop)
+# median 2.76 seconds
 
 # [ToDo] Use cvLASSO function on the riboflavin data with 30 tuning parameters (just 30 to make it faster)
-
+cvLasso <- cvLASSO(X, Y, n_lambda = 30)
 # [ToDo] Based on the above output, plot the value of CV(lambda) versus tuning parameter. Note that this will change with each run since the folds are random, this is ok.
-
+plot(cvLasso$lambda_seq, cvLasso$cvm)

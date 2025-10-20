@@ -286,6 +286,6 @@ cvLASSO <- function(X ,Y, lambda_seq = NULL, n_lambda = 60, k = 5, fold_ids = NU
   # lambda_1se - selected lambda based on 1SE rule
   # cvm - values of CV(lambda) for each lambda
   # cvse - values of SE_CV(lambda) for each lambda
-  return(list(lambda_seq = lambda_seq, beta_mat = beta_mat, beta0_vec = beta0_vec, fold_ids = fold_ids, lambda_min = lambda_min, lambda_1se = lambda_1se, cvm = cvm, cvse = cvse))
+  return(list(lambda_seq = lambda_seq, beta_mat = lasso_coeff$beta_mat, beta0_vec = lasso_coeff$beta0_vec, fold_ids = fold_ids, lambda_min = lambda_min, lambda_1se = lambda_1se, cvm = cvm, cvse = cvse))
 }
 
