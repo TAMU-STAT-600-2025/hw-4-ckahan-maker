@@ -206,7 +206,7 @@ fitLASSO <- function(X ,Y, lambda_seq = NULL, n_lambda = 60, eps = 0.001){
   # [ToDo] Perform back scaling and centering to get original intercept and coefficient vector
   # for each lambda
   # Rescale coefficient matrix back to the original data scale
-  beta_mat <- sweep(out$beta_mat, 2, weights, "/")
+  beta_mat <- sweep(out$beta_mat, 1, weights, "/")
   # β₀ = Ymean − Xmeansᵀ β
   beta0_vec <- Ymean - as.numeric(crossprod(Xmeans, beta_mat))
   lambda_seq <- out$lambda_seq
